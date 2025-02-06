@@ -508,8 +508,17 @@ impl Cache {
             if bucket.is_dir() {
                 for entry in walkdir::WalkDir::new(bucket) {
                     let entry = entry?;
+
+                    #[cfg(unix)]
                     if entry.file_type().is_symlink() {
-                        if let Ok(target) = fs_err::canonicalize(entry.path()) {
+                        if let Ok(target) = uv_fs::resolve_symlink(entry.path()) {
+                            references.insert(target);
+                        }
+                    }
+
+                    #[cfg(windows)]
+                    if entry.file_type().is_file() {
+                        if let Ok(target) = uv_fs::resolve_symlink(entry.path()) {
                             references.insert(target);
                         }
                     }
